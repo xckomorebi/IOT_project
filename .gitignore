@@ -1,2 +1,5 @@
-console.ipynb
 data
+.vscode
+.idea
+
+console.ipynb
