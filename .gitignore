@@ -1,5 +1,8 @@
 data
+
 .vscode
 .idea
 
 console.ipynb
+.ipynb_checkpoints
+*.py[cod]

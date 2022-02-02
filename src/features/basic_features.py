@@ -19,4 +19,4 @@ def extract_feature_from_path(inputs, outputs):
                            output_dir=output_category,
                            cfg=CFG_FILE,
                            image_ext=IMAGE_EXT)
-            infer_video_d2
+            infer_video_d2.main(ns)
