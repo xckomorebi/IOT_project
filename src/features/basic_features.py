@@ -6,7 +6,7 @@ from VideoPose3D.inference import infer_video_d2
 
 
 def extract_feature_from_path(inputs, outputs):
-    CFG_FILE = "COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml",
+    CFG_FILE = "COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml"
     IMAGE_EXT = "mp4"
 
     if not os.path.exists(outputs):
