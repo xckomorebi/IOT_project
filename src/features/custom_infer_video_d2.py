@@ -105,7 +105,7 @@ def process_file(video_name, output_dir, cfg_file=CFG_FILE, image_ext=IMAGE_EXT,
             'h': im.shape[0],
         }
         
-        if save_file:
-            np.savez_compressed(out_name, boxes=boxes, keypoints=keypoints, metadata=metadata)
+    if save_file:
+        np.savez_compressed(out_name, boxes=boxes, keypoints=keypoints, metadata=metadata)
 
-        return video_name, boxes, keypoints
+    return video_name, boxes, keypoints
