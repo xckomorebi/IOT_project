@@ -21,9 +21,13 @@ import numpy as np
 import time
 import os
 
+from glob import glob
+from src.utils.utils import check_path
+
 
 CFG_FILE = "COCO-Keypoints/keypoint_rcnn_R_101_FPN_3x.yaml"
 IMAGE_EXT = "mp4"
+
 
 def get_resolution(filename):
     command = ['ffprobe', '-v', 'error', '-select_streams', 'v:0',
@@ -33,15 +37,16 @@ def get_resolution(filename):
         w, h = line.decode().strip().split(',')
         return int(w), int(h)
 
+
 def read_video(filename):
     w, h = get_resolution(filename)
 
     command = ['ffmpeg',
-            '-i', filename,
-            '-f', 'image2pipe',
-            '-pix_fmt', 'bgr24',
-            '-vsync', '0',
-            '-vcodec', 'rawvideo', '-']
+               '-i', filename,
+               '-f', 'image2pipe',
+               '-pix_fmt', 'bgr24',
+               '-vsync', '0',
+               '-vcodec', 'rawvideo', '-']
 
     pipe = sp.Popen(command, stdout=sp.PIPE, bufsize=-1)
     while True:
@@ -51,7 +56,7 @@ def read_video(filename):
         yield np.frombuffer(data, dtype='uint8').reshape((h, w, 3))
 
 
-def process_file(video_name, output_dir, cfg_file=CFG_FILE, image_ext=IMAGE_EXT, save_file=False):
+def process_single_file(video_name, output_dir, cfg_file=CFG_FILE, image_ext=IMAGE_EXT, save_file=False):
 
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file(cfg_file))
@@ -60,8 +65,8 @@ def process_file(video_name, output_dir, cfg_file=CFG_FILE, image_ext=IMAGE_EXT,
     predictor = DefaultPredictor(cfg)
 
     out_name = os.path.join(
-            output_dir, os.path.basename(video_name)
-        )
+        output_dir, os.path.basename(video_name)
+    )
     print('Processing {}'.format(video_name))
 
     boxes = []
@@ -70,7 +75,7 @@ def process_file(video_name, output_dir, cfg_file=CFG_FILE, image_ext=IMAGE_EXT,
     for frame_i, im in enumerate(read_video(video_name)):
         t = time.time()
         outputs = predictor(im)['instances'].to('cpu')
-        
+
         print('Frame {} processed in {:.3f}s'.format(frame_i, time.time() - t))
 
         has_bbox = False
@@ -84,28 +89,50 @@ def process_file(video_name, output_dir, cfg_file=CFG_FILE, image_ext=IMAGE_EXT,
             kps = outputs.pred_keypoints.numpy()
             kps_xy = kps[:, :, :2]
             kps_prob = kps[:, :, 2:3]
-            kps_logit = np.zeros_like(kps_prob) # Dummy
+            kps_logit = np.zeros_like(kps_prob)  # Dummy
             kps = np.concatenate((kps_xy, kps_logit, kps_prob), axis=2)
             kps = kps.transpose(0, 2, 1)
         else:
             kps = []
             bbox_tensor = []
-            
+
         # Mimic Detectron1 format
         cls_boxes = [[], bbox_tensor]
         cls_keyps = [[], kps]
-        
+
         boxes.append(cls_boxes)
         keypoints.append(cls_keyps)
 
-        
         # Video resolution
         metadata = {
             'w': im.shape[1],
             'h': im.shape[0],
         }
-        
-    if save_file:
-        np.savez_compressed(out_name, boxes=boxes, keypoints=keypoints, metadata=metadata)
 
-    return video_name, boxes, keypoints
+    if save_file:
+        np.savez_compressed(out_name, boxes=boxes,
+                            keypoints=keypoints, metadata=metadata)
+
+    return boxes, keypoints
+
+
+def process_directory(input_dir, output_dir, save_file=False):
+    file_list = []
+    labels = []
+    boxes = []
+    keypoints = []
+
+    for label in os.listdir(input_dir):
+        output_category_dir = os.path.join(output_dir, label)
+        check_path(output_category_dir)
+        file_category_list = glob(os.path.join(input_dir, label, "*.mp4"))
+        file_list += file_category_list
+        labels += [label] * len(file_category_list)
+
+        for video_name in file_category_list:
+            _boxes, _keypoints = process_single_file(
+                video_name, output_category_dir, save_file=save_file)
+            boxes.append(_boxes)
+            keypoints.append(_keypoints)
+
+    return file_list, labels, boxes, keypoints
