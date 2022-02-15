@@ -56,7 +56,7 @@ def read_video(filename):
         yield np.frombuffer(data, dtype='uint8').reshape((h, w, 3))
 
 
-def process_single_file(video_name, output_dir, cfg_file=CFG_FILE, image_ext=IMAGE_EXT, save_file=False):
+def process_single_file(video_name, output_dir, cfg_file=CFG_FILE, save_file=False):
 
     cfg = get_cfg()
     cfg.merge_from_file(model_zoo.get_config_file(cfg_file))
@@ -116,7 +116,7 @@ def process_single_file(video_name, output_dir, cfg_file=CFG_FILE, image_ext=IMA
     return boxes, keypoints
 
 
-def process_directory(input_dir, output_dir, save_file=False):
+def process_directory(input_dir, output_dir, image_ext=IMAGE_EXT, save_file=False):
     file_list = []
     labels = []
     boxes = []
@@ -125,7 +125,7 @@ def process_directory(input_dir, output_dir, save_file=False):
     for label in os.listdir(input_dir):
         output_category_dir = os.path.join(output_dir, label)
         check_path(output_category_dir)
-        file_category_list = glob(os.path.join(input_dir, label, "*.mp4"))
+        file_category_list = glob(os.path.join(input_dir, label, "*." + image_ext))
         file_list += file_category_list
         labels += [label] * len(file_category_list)
 
