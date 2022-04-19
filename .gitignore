@@ -3,6 +3,7 @@ data
 .vscode
 .idea
 
+test.py
 console.ipynb
 .ipynb_checkpoints
 *.py[cod]
